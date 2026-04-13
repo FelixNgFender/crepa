@@ -4,7 +4,7 @@ set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
   echo "Usage: $0 [LOCAL] [REMOTE]"
-  echo "Example: $0 ~/workplaces/corrupted-jepa/ goat@turing.wpi.edu:~/corrupted-jepa"
+  echo "Example: $0 ~/workplaces/crepa/ goat@turing.wpi.edu:~/crepa"
   exit 1
 fi
 

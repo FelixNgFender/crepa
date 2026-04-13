@@ -20,7 +20,7 @@ paper. Make sure that the tag doesn't exist yet so you're not overwriting files.
 
 As for the summary itself, remember that you're processing this paper within the
 context of this repository, so most often we we will be interested in how to
-apply the paper and its lessons to the corrupted-jepa project. Therefore, you
+apply the paper and its lessons to the crepa project. Therefore, you
 should feel free to "remind yourself" of the related pea code by reading the
 relevant parts, and then explicitly make the connection of how this paper might
 relate to us or what are things we might be inspired about or try.
