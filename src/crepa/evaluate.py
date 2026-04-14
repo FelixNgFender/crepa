@@ -86,8 +86,6 @@ def evaluate(args: settings.Eval) -> None:
             # TODO: group, name?
         )
     eval_loop(clean_loader, net, device, args)
-    if args.is_master_process:
-        trackio.finish()
 
 
 def eval_loop(
@@ -142,6 +140,7 @@ def eval_loop(
         len(val_loader) + (args.ddp and (len(val_loader.sampler) * args.world_size < len(val_loader.dataset))),  # ty:ignore[invalid-argument-type]
         [batch_time, top1, top5, err1],
         prefix="test: ",
+        is_master_process=args.is_master_process,
     )
     run_eval(val_loader)
     if args.ddp:
