@@ -18,9 +18,11 @@ OMP_NUM_THREADS=1 torchrun --standalone --nproc_per_node=8 -m crepa eval -a alex
 # view wandb-like live charts
 trackio show
 
-# push/pull work to remote cluster with rsync
+# slurm stuff: push/pull work to remote cluster with rsync
 ./scripts/push.sh # run without args to see how to use it
 ./scripts/pull.sh
+# slurm interactive
+ACCOUNT=goat PARTITION=short ./scripts/slurm.sh
 
 # monitor GPU utilization and memory usage during training
 watch -n 1 'nvidia-smi \
