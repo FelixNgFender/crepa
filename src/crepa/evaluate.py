@@ -81,7 +81,7 @@ def evaluate(args: settings.Eval) -> None:
     if args.is_master_process:
         trackio.init(
             project="crepa",
-            name=f"imagenet-clean-{args.arch}",
+            name=f"imagenet-clean-{args.arch}-{utils.current_dt_human()}",
             config={"arch": args.arch, "batch_size": args.batch_size},
             # TODO: group, name?
         )
@@ -96,7 +96,7 @@ def eval_loop(
     device: torch.device,
     args: settings.Eval,
 ) -> None:
-    def run_validate(loader: data.DataLoader, base_progress: int = 0) -> None:
+    def run_eval(loader: data.DataLoader, base_progress: int = 0) -> None:
         with (
             torch.inference_mode(),
             torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=args.use_mixed_precision),
@@ -109,8 +109,10 @@ def eval_loop(
 
                 logits = model(images_d)
                 acc1, acc5 = metrics.accuracy(logits, target_d, topk=(1, 5))
+
                 top1.update(acc1, images.size(0))
                 top5.update(acc5, images.size(0))
+                err1.update(100.0 - acc1, images.size(0))
 
                 # measure elapsed time
                 batch_time.update(time.perf_counter() - end)
@@ -123,6 +125,8 @@ def eval_loop(
                             "acc@1/running_avg": top1.avg,
                             "acc@5/batch": top5.val,
                             "acc@5/running_avg": top5.avg,
+                            "error@1/batch": err1.val,
+                            "error@1/running_avg": err1.avg,
                         }
                     )
                 if global_i % args.log_freq == 0:
@@ -133,15 +137,17 @@ def eval_loop(
     batch_time = metrics.AverageMeter("time", device, ":6.3f", metrics.Summary.NONE)
     top1 = metrics.AverageMeter("acc@1", device, ":6.2f", metrics.Summary.AVERAGE)
     top5 = metrics.AverageMeter("acc@5", device, ":6.2f", metrics.Summary.AVERAGE)
+    err1 = metrics.AverageMeter("err@1", device, ":6.2f", metrics.Summary.AVERAGE)
     progress = metrics.ProgressMeter(
         len(val_loader) + (args.ddp and (len(val_loader.sampler) * args.world_size < len(val_loader.dataset))),  # ty:ignore[invalid-argument-type]
-        [batch_time, top1, top5],
+        [batch_time, top1, top5, err1],
         prefix="test: ",
     )
-    run_validate(val_loader)
+    run_eval(val_loader)
     if args.ddp:
         top1.all_reduce()
         top5.all_reduce()
+        err1.all_reduce()
 
     if args.ddp and (len(val_loader.sampler) * args.world_size < len(val_loader.dataset)):  # ty:ignore[invalid-argument-type]
         aux_val_dataset = data.Subset(
@@ -151,7 +157,7 @@ def eval_loop(
         aux_val_loader = data.DataLoader(
             aux_val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=True
         )
-        run_validate(aux_val_loader, len(val_loader))
+        run_eval(aux_val_loader, len(val_loader))
 
     progress.display_summary()
     if args.is_master_process:
@@ -159,5 +165,6 @@ def eval_loop(
             {
                 "acc@1/final": top1.avg,
                 "acc@5/final": top5.avg,
+                "error@1/final": err1.avg,
             }
         )
