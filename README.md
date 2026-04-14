@@ -1,0 +1,23 @@
+```bash
+# install uv https://docs.astral.sh/uv/getting-started/installation/
+# $ uv venv
+# $ uv sync
+# $ source .venv/bin/activate
+# register for imagenet dataset (use institution email) and download ILSVRC2012_img_val.tar from https://image-net.org/challenges/LSVRC/2012/2012-downloads.php. put it in your current directory.
+# prepare imagenet 1k val set (one-time)
+./scripts/extract_imagenet.sh
+
+# single node, 2 GPUs
+torchrun --standalone --nproc_per_node=2 -m crepa eval -a alexnet
+
+# serious
+OMP_NUM_THREADS=1 torchrun --standalone --nproc_per_node=8 -m crepa eval -a alexnet 2>&1 | tee training.log
+
+# monitor GPU utilization and memory usage during training
+watch -n 1 'nvidia-smi \
+  --query-gpu=index,utilization.gpu,memory.used,memory.total \
+  --format=csv && \
+  echo && \
+  nvidia-smi --query-compute-apps=gpu_uuid,pid,process_name,used_memory \
+  --format=csv'
+```

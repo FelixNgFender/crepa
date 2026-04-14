@@ -2,6 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 default_language_version:
   python: "python3.13"
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -16,9 +17,23 @@ repos:
       - id: detect-private-key
       - id: trailing-whitespace
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.10
+  - repo: local
     hooks:
       - id: ruff-check
-        args: [--fix]
+        name: ruff check
+        entry: ruff check . --fix
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: ruff-format
+        name: ruff format
+        entry: ruff format .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: ty
+        name: ty check
+        entry: ty check .
+        language: system
+        pass_filenames: false
+        always_run: true

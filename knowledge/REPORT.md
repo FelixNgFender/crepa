@@ -39,3 +39,22 @@
    to define what should be invariant. These augmentations bake in assumptions
    that may not hold for all downstream tasks. JEPA's masking-based approach
    avoids this — the only inductive bias is what gets masked.
+
+## NOTE
+
+<https://docs.pytorch.org/vision/main/generated/torchvision.datasets.ImageNet.html>
+
+Before using this class, it is required to download ImageNet 2012 dataset from
+here and place the files ILSVRC2012_devkit_t12.tar.gz and
+ILSVRC2012_img_train.tar or ILSVRC2012_img_val.tar based on split in the root
+directory.
+
+When using the DET or CLS-LOC dataset, please cite both of the following:
+
+    Jia Deng, Wei Dong, Richard Socher, Li-Jia Li, Kai Li, Li Fei-Fei. Imagenet: A Large-Scale Hierarchical Image Database. CVPR 2009. bibtex
+
+    Olga Russakovsky*, Jia Deng*, Hao Su, Jonathan Krause, Sanjeev Satheesh, Sean Ma, Zhiheng Huang, Andrej Karpathy, Aditya Khosla, Michael Bernstein, Alexander C. Berg and Li Fei-Fei. (* = equal contribution) ImageNet Large Scale Visual Recognition Challenge. arXiv:1409.0575, 2014. paper | bibtex
+
+code lifted from
+<https://github.com/pytorch/examples/blob/main/imagenet/main.py>, make sure to
+credit
