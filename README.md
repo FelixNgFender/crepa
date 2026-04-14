@@ -13,6 +13,11 @@ torchrun --standalone --nproc_per_node=2 -m crepa eval -a alexnet
 # serious
 OMP_NUM_THREADS=1 torchrun --standalone --nproc_per_node=8 -m crepa eval -a alexnet 2>&1 | tee training.log
 
+# adjust nproc_per_node and batch size according to your system
+
+# view wandb-like live charts
+trackio show
+
 # monitor GPU utilization and memory usage during training
 watch -n 1 'nvidia-smi \
   --query-gpu=index,utilization.gpu,memory.used,memory.total \
