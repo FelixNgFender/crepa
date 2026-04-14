@@ -38,7 +38,9 @@ def evaluate(args: settings.Eval) -> None:
     if args.ddp:
         dist.barrier()  # wait for master to load the model before other ranks can access it
 
-    net.eval().to(device)
+    # switch from the default NCHW layout to channels-last NHWC memory format, improving data locality and unlocking
+    # optimized convolution kernels
+    net.eval().to(device, memory_format=torch.channels_last)
     if not args.ddp:
         net.compile()
     else:
@@ -102,7 +104,7 @@ def eval_loop(
             end = time.perf_counter()
             for i, (images, target) in enumerate(loader):
                 global_i = base_progress + i
-                images_d = images.to(device, non_blocking=True)
+                images_d = images.to(device, non_blocking=True, memory_format=torch.channels_last)
                 target_d = target.to(device, non_blocking=True)
 
                 logits = model(images_d)
