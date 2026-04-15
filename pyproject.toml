@@ -7,10 +7,10 @@ requires-python = ">=3.13"
 dependencies = [
   "pydantic>=2.13.0",
   "pydantic-settings>=2.13.1",
-  "rich>=15.0.0",
   "scipy>=1.17.1",
-  "torch>=2.11.0",
-  "torchvision>=0.26.0",
+  "torch==2.9.1",
+  "torchvision==0.24.1",
+  "rich>=15.0.0",
   "trackio[gpu]>=0.22.0",
 ]
 

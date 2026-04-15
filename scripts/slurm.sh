@@ -8,8 +8,8 @@ ACCOUNT="${ACCOUNT:?account is required}"
 PARTITION="${PARTITION:?partition is required}"
 TIME="${TIME:-04:00:00}"
 GPUS="${GPUS:-1}"
-CPUS="${CPUS:-4}"
-MEM="${MEM:-64G}"
+CPUS="$((16 * GPUS))"
+MEM="${MEM:-32G}"
 GPU_TYPE="${GPU_TYPE:-H200|H100|A100-80G|A100}"
 
 echo "requesting interactive session..."
@@ -30,4 +30,7 @@ srun --partition="$PARTITION" \
   --cpus-per-task="$CPUS" \
   --mem="$MEM" \
   -C "$GPU_TYPE" \
-  --pty bash
+  --pty bash -c '
+nvidia-smi
+exec bash
+'

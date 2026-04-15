@@ -1,6 +1,6 @@
-# compute
 import pathlib
 
+# compute
 SEED = 42
 USE_ACCELERATOR = True
 FP32_MATMUL_PRECISION = "high"  # "highest", "high", "medium"
@@ -10,7 +10,7 @@ DDP_LOCAL_RANK = 0
 DDP_WORLD_SIZE = 1
 
 # data
-NUM_WORKERS = 8
+NUM_WORKERS = DDP_WORLD_SIZE * 16
 BATCH_SIZE = 256
 DATA_DIR = pathlib.Path("data")
 CKPT_DIR = pathlib.Path("ckpt")
