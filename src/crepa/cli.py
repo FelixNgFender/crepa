@@ -1,13 +1,22 @@
 import logging
 import os
+from typing import Annotated
 
+import pydantic
 import pydantic_settings as ps
 import rich.logging
 import rich.prompt
 
-from crepa import evaluate, settings
+from crepa import evaluate, finetune, settings
 
 logger = logging.getLogger(__name__)
+
+
+class Finetune(settings.Finetune):
+    """Finetunes I-JEPA on clean ImageNet-1K training set."""
+
+    def cli_cmd(self) -> None:
+        finetune.finetune(self)
 
 
 class Eval(settings.Eval):
@@ -25,7 +34,16 @@ class Command(
 ):
     """CLI for evaluating JEPA-style models on input corruption benchmarks."""
 
+    finetune: ps.CliSubCommand[Finetune]
     eval: ps.CliSubCommand[Eval]
+
+    verbose: Annotated[
+        ps.CliImplicitFlag[bool],
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("v", "verbose"),
+            description="Logs extra debugging information",
+        ),
+    ] = False
 
     def cli_cmd(self) -> None:
         class DistRankFilter(logging.Filter):

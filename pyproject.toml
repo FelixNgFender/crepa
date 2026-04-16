@@ -12,6 +12,7 @@ dependencies = [
   "torchvision==0.24.1",
   "rich>=15.0.0",
   "trackio[gpu]>=0.22.0",
+  "transformers>=5.5.4",
 ]
 
 [build-system]

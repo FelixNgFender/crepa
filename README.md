@@ -3,6 +3,8 @@
 # $ uv venv
 # $ uv sync
 # $ source .venv/bin/activate
+# fill in your huggingface token for faster downloads
+# $ cp .env.example .env
 # register for imagenet dataset (use institution email) and download ILSVRC2012_img_val.tar from https://image-net.org/challenges/LSVRC/2012/2012-downloads.php. put it in your current directory.
 # prepare imagenet 1k val set (one-time)
 ./scripts/extract_imagenet.sh

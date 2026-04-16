@@ -1,0 +1,3 @@
+[tools]
+"npm:sync-dotenv" = "latest"
+python = "3.13"

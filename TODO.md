@@ -49,3 +49,7 @@ models: SAM 3, SigLIP 2, DINOv3
 1. ImageNet-P (perturbation): measures prediction stability under small,
    non-adversarial perturbations (e.g., slight translations, rotations)
 1. ImageNet-O (out-of-distribution)
+
+## TODO
+
+- cleanup logging and metrics

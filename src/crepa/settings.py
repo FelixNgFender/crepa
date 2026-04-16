@@ -12,13 +12,6 @@ from crepa import constants
 class Base(ps.BaseSettings):
     """Base settings all settings inherit from, i.e., pydantic global settings"""
 
-    verbose: Annotated[
-        ps.CliImplicitFlag[bool],
-        pydantic.Field(
-            validation_alias=pydantic.AliasChoices("v", "verbose"),
-            description="Logs extra debugging information",
-        ),
-    ] = False
     model_config = ps.SettingsConfigDict(env_file=".env", extra="ignore")
 
 
@@ -79,40 +72,31 @@ class DDP(Base):
         return self.rank == 0
 
 
-################################################################################
-#                                COMMANDS                                      #
-################################################################################
-class Eval(Seed, Device, Precision, DDP):
-    """Settings for the `eval` CLI subcommand."""
+class HuggingFace(Base):
+    hf_token: Annotated[
+        str | None,
+        pydantic.Field(
+            description="Hugging Face token for authentication",
+        ),
+    ] = None
 
-    arch: Annotated[
-        Literal[
-            "alexnet",
-            # 'squeezenet1.0', 'squeezenet1.1', 'condensenet4', 'condensenet8',
-            # 'vgg11', 'vgg', 'vggbn',
-            # 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'densenet264',
-            "resnet18",
-            "resnet50",
-            # "resnet34", "resnet101", "resnet152",
-            # 'resnext50', 'resnext101', 'resnext101_64'
-        ],
+
+class Log(Base):
+    log_freq: Annotated[
+        pydantic.PositiveInt,
         pydantic.Field(
-            validation_alias=pydantic.AliasChoices("a", "arch"),
-            description="Model architecture to evaluate",
+            validation_alias=pydantic.AliasChoices("l", "log_freq"),
+            description="Frequency of logging",
         ),
-    ]
-    workers: Annotated[
-        pydantic.NonNegativeInt,
-        pydantic.Field(
-            validation_alias=pydantic.AliasChoices("j", "workers"),
-            description="Number of data loading workers",
-        ),
-    ] = constants.NUM_WORKERS
+    ] = constants.LOG_FREQ
+
+
+class DataLoading(Base):
     data_dir: Annotated[
         pathlib.Path,
         pydantic.Field(
             validation_alias=pydantic.AliasChoices("d", "data_dir"),
-            description="Dataset directory for evaluation",
+            description="Dataset directory",
         ),
     ] = constants.DATA_DIR
 
@@ -131,6 +115,13 @@ class Eval(Seed, Device, Precision, DDP):
         """
         return self.data_dir / "imagenet"
 
+    workers: Annotated[
+        pydantic.NonNegativeInt,
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("j", "workers"),
+            description="Number of data loading workers",
+        ),
+    ] = constants.WORKERS
     batch_size: Annotated[
         pydantic.PositiveInt,
         pydantic.Field(
@@ -139,18 +130,87 @@ class Eval(Seed, Device, Precision, DDP):
         ),
     ] = constants.BATCH_SIZE
 
+
+class Hyperparameters(Base):
+    epochs: Annotated[
+        pydantic.PositiveInt,
+        pydantic.Field(
+            description="Number of epochs to train for",
+        ),
+    ] = constants.EPOCHS
+    lr: Annotated[
+        float,
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("lr", "learning_rate"),
+            description="Learning rate for training",
+        ),
+    ] = constants.LR
+
+
+class Checkpoint(Base):
+    ckpt_dir: Annotated[
+        pathlib.Path,
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("c", "ckpt_dir"),
+            description="Checkpoint directory",
+        ),
+    ] = constants.CKPT_DIR
+
+
+################################################################################
+#                                COMMANDS                                      #
+################################################################################
+class Finetune(Checkpoint, Hyperparameters, DataLoading, Log, DDP, Precision, Device, Seed, HuggingFace):
+    """Settings for the `finetune` CLI subcommand."""
+
+    @pydantic.model_validator(mode="after")
+    def validate_batch_size(self) -> "Finetune":
+        if self.batch_size % self.world_size != 0:
+            msg = f"batch size {self.batch_size} must be divisible by world size {self.world_size}"
+            raise ValueError(msg)
+        return self
+
+    arch: Annotated[
+        Literal[
+            "ijepa_vith14_1k",
+            "ijepa_vith16_1k",
+            "ijepa_vith14_22k",
+            "ijepa_vitg16_22k",
+        ],
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("a", "arch"),
+            description="Model architecture to finetune",
+        ),
+    ]
+
+
+class Eval(DataLoading, Log, DDP, Precision, Device, Seed, HuggingFace):
+    """Settings for the `eval` CLI subcommand."""
+
     @pydantic.model_validator(mode="after")
     def validate_batch_size(self) -> "Eval":
         if self.batch_size % self.world_size != 0:
             msg = f"batch size {self.batch_size} must be divisible by world size {self.world_size}"
             raise ValueError(msg)
-
         return self
 
-    log_freq: Annotated[
-        pydantic.PositiveInt,
+    arch: Annotated[
+        Literal[
+            "alexnet",
+            # 'squeezenet1.0', 'squeezenet1.1', 'condensenet4', 'condensenet8',
+            # 'vgg11', 'vgg', 'vggbn',
+            # 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'densenet264',
+            "resnet18",
+            "resnet50",
+            # "resnet34", "resnet101", "resnet152",
+            # 'resnext50', 'resnext101', 'resnext101_64'
+            "ijepa_vith14_1k",
+            "ijepa_vith16_1k",
+            "ijepa_vith14_22k",
+            "ijepa_vitg16_22k",
+        ],
         pydantic.Field(
-            validation_alias=pydantic.AliasChoices("l", "log_freq"),
-            description="Frequency of logging during evaluation",
+            validation_alias=pydantic.AliasChoices("a", "arch"),
+            description="Model architecture to evaluate",
         ),
-    ] = constants.LOG_FREQ
+    ]
