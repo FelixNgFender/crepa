@@ -13,7 +13,7 @@
 torchrun --standalone --nproc_per_node=2 -m crepa eval -a alexnet
 
 # serious
-OMP_NUM_THREADS=1 torchrun --standalone --nproc_per_node=8 -m crepa eval -a alexnet 2>&1 | tee training.log
+OMP_NUM_THREADS=1 torchrun --standalone --nproc_per_node=8 -m crepa finetune -a ijepa_vith14_1k -j 32 -b 4096 --epochs 2 --lr 3e-4 --log-freq 1 2>&1 | tee logs/finetune/ijepa.log
 
 # adjust nproc_per_node and batch size according to your system
 

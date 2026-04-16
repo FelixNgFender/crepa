@@ -19,12 +19,13 @@ BATCH_SIZE = 256
 LOG_FREQ = 10
 
 # hyperparameters
-EPOCHS = 10
+EPOCHS = 5
 LR = 3e-4
 
 # checkpoint
 EPOCH_CKPT_TMPL = "epoch_{epoch}.pth"
 BEST_CKPT = "best.pth"
+FINAL_CKPT = "final.pth"
 
 # misc
 DATEFMT_STR_HUMAN = "%Y-%m-%d %H:%M:%S"

@@ -33,7 +33,7 @@ def evaluate(args: settings.Eval) -> None:
             _model = model.IJepaImageClassifier.from_pretrained(
                 f"facebook/{args.arch}", num_labels=1000, token=args.hf_token
             )
-            transform = None  # already used the processor within the wrapper
+            transform = _model.transform
         case _:
             msg = f"unsupported architecture {args.arch}"
             raise RuntimeError(msg)

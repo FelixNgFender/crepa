@@ -1,6 +1,8 @@
 import torch
 import transformers
+from PIL import Image
 from torch import nn
+from transformers import modeling_outputs
 
 
 class IJepaImageClassifier(nn.Module):
@@ -11,10 +13,27 @@ class IJepaImageClassifier(nn.Module):
         self.processor = processor
         self.net = net
 
-    def forward(self, images: torch.Tensor) -> torch.Tensor:
-        inputs = self.processor(images, return_tensors="pt", device=images.device.type)  # ty:ignore[call-non-callable]
-        outputs = self.net(**inputs)
-        return outputs.logits
+    def forward(
+        self,
+        pixel_values: torch.Tensor,
+        labels: torch.LongTensor | None = None,
+        *,
+        return_logits: bool = True,
+        interpolate_pos_encoding: bool | None = True,
+    ) -> torch.Tensor | modeling_outputs.ImageClassifierOutput:
+        # pixel_values: (B, C, H, W) float tensor, already preprocessed by transform()
+        outputs = self.net(pixel_values=pixel_values, labels=labels, interpolate_pos_encoding=interpolate_pos_encoding)
+        return outputs.logits if return_logits else outputs
+
+    def transform(self, image: Image.Image) -> torch.Tensor:
+        """
+        torchvision-compatible single-image transform.
+        ImageFolder calls this on individual PIL images before collation.
+        Returns a (C, H, W) float tensor.
+        """
+        result = self.processor(images=image, return_tensors="pt")  # ty:ignore[call-non-callable]
+        # processor returns shape (1, C, H, W), squeeze the batch dim
+        return result.pixel_values.squeeze(0)
 
     @classmethod
     def from_pretrained(cls, model_name: str, num_labels: int, token: str | None = None) -> "IJepaImageClassifier":
@@ -24,5 +43,5 @@ class IJepaImageClassifier(nn.Module):
 
     def freeze_backbone(self) -> None:
         """Freeze backbone and only finetune the classifier head"""
-        self.net.ijepa.requires_grad_(requires_grad=False)
-        self.net.classifier.requires_grad_()
+        self.net.requires_grad_(requires_grad=False)
+        self.net.classifier.requires_grad_(requires_grad=True)

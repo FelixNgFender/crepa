@@ -12,6 +12,7 @@ class ImageNet1kClean(data.Dataset):
     def __init__(
         self,
         root: str | pathlib.Path,
+        *,
         split: Literal["train", "val"],
         transform: Callable | None = None,
     ) -> None:
