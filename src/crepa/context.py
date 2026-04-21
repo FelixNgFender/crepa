@@ -3,11 +3,10 @@ import logging
 import time
 
 import torch
-import trackio
 from torch import nn
 from torch.utils import data
 
-from crepa import metric, utils
+from crepa import metric, track
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +39,9 @@ class Eval:
     """DDP wrapper for `model` if DDP is used."""
     _raw_model: nn.Module
     """Raw model weights. Use `model` property instead."""
+
+    # experiment tracking
+    tracker: track.Tracker
 
     @property
     def model(self) -> nn.Module | torch.nn.parallel.DistributedDataParallel:
@@ -76,7 +78,7 @@ class Eval:
                     batch_time.update(time.perf_counter() - end)
                     end = time.perf_counter()
                     if self.is_master_process:
-                        trackio.log(
+                        self.tracker.log(
                             {
                                 "batch_time": batch_time.val,
                                 "acc@1/batch": top1.val,
@@ -105,12 +107,8 @@ class Eval:
         )
 
         if self.is_master_process:
-            trackio.init(
-                project="crepa",
-                name=f"imagenet-clean-eval-{self.arch}-{utils.current_dt_human()}",
-                config={"arch": self.arch, "batch_size": self.batch_size},
-                # TODO: group, name?
-            )
+            self.tracker.init()
+
         run_eval(self.val_loader)
         if self.ddp:
             top1.all_reduce()
@@ -129,7 +127,7 @@ class Eval:
 
         progress.display_summary()
         if self.is_master_process:
-            trackio.log(
+            self.tracker.log(
                 {
                     "acc@1/final": top1.avg,
                     "acc@5/final": top5.avg,

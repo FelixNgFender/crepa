@@ -7,23 +7,30 @@ import pydantic_settings as ps
 import rich.logging
 import rich.prompt
 
-from crepa import evaluate, finetune, settings
+from crepa import evaluate, finetune, parse, settings
 
 logger = logging.getLogger(__name__)
 
 
 class Finetune(settings.Finetune):
-    """Finetunes I-JEPA on clean ImageNet-1K training set."""
+    """Finetunes JEPA models on ImageNet-1K training set."""
 
     def cli_cmd(self) -> None:
         finetune.finetune(self)
 
 
 class Eval(settings.Eval):
-    """Evaluates model on stuff."""
+    """Evaluates model on ImageNet-1K validation set or ImageNet-C."""
 
     def cli_cmd(self) -> None:
         evaluate.evaluate(self)
+
+
+class Parse(settings.Parse):
+    """Parses ImageNet-C validation logs to produce err@1 formulas by distortion."""
+
+    def cli_cmd(self) -> None:
+        parse.parse(self)
 
 
 class Command(
@@ -36,6 +43,7 @@ class Command(
 
     finetune: ps.CliSubCommand[Finetune]
     eval: ps.CliSubCommand[Eval]
+    parse: ps.CliSubCommand[Parse]
 
     verbose: Annotated[
         ps.CliImplicitFlag[bool],

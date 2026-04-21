@@ -5,11 +5,10 @@ import pathlib
 import time
 
 import torch
-import trackio
 from torch import nn
 from torch.utils import data
 
-from crepa import constants, context, dataset, metric, model, settings, utils
+from crepa import constants, context, dataset, metric, model, settings, track, utils
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +86,7 @@ class IJepaFinetuneCtx(context.Eval):
                 end = time.perf_counter()
 
                 if self.is_master_process:
-                    trackio.log(
+                    self.tracker.log(
                         {
                             "epoch": epoch,
                             "batch_time": batch_time.val,
@@ -106,7 +105,7 @@ class IJepaFinetuneCtx(context.Eval):
 
             # epoch-level summary
             if self.is_master_process:
-                trackio.log(
+                self.tracker.log(
                     {
                         "epoch": epoch,
                         "loss/epoch_avg": losses.avg,
@@ -116,11 +115,7 @@ class IJepaFinetuneCtx(context.Eval):
                 )
 
         if self.is_master_process:
-            trackio.init(
-                project="crepa",
-                name=f"imagenet-clean-finetune-{self.arch}-{utils.current_dt_human()}",
-                config={"arch": self.arch, "batch_size": self.batch_size, "epochs": self.epochs, "lr": self.lr},
-            )
+            self.tracker.init()
 
             def checkpoint_final() -> None:
                 self.checkpoint(constants.FINAL_CKPT)
@@ -140,7 +135,7 @@ class IJepaFinetuneCtx(context.Eval):
             best_acc1 = max(acc1, best_acc1)
 
             if self.is_master_process:
-                trackio.log(
+                self.tracker.log(
                     {
                         "epoch": epoch,
                         "val/acc@1": acc1,
@@ -174,9 +169,9 @@ def finetune(args: settings.Finetune) -> None:
         world_size=args.world_size,
     )
 
-    _model = model.IJepaImageClassifier.from_pretrained(f"facebook/{args.arch}", num_labels=1000, token=args.hf_token)
+    _model = model.IJepaImageClassifier.from_pretrained(f"facebook/{args.arch}", num_labels=1000)
     _model.freeze_backbone()
-    transform = _model.transform
+    collate_fn = _model.collate_fn
 
     _model.to(device, memory_format=torch.channels_last)  # ty:ignore[no-matching-overload]
     optimizer = torch.optim.AdamW(_model.net.classifier.parameters(), lr=args.lr)
@@ -191,17 +186,28 @@ def finetune(args: settings.Finetune) -> None:
         )
         ddp_model.compile()
 
-    train_ds = dataset.ImageNet1kClean(args.imagenet_dir, split="train", transform=transform)
-    val_ds = dataset.ImageNet1kClean(args.imagenet_dir, split="val", transform=transform)
+    train_ds = dataset.ImageNet1kClean(args.imagenet_dir, split="train")
+    val_ds = dataset.ImageNet1kClean(args.imagenet_dir, split="val")
     rank_batch_size = args.batch_size // args.world_size
 
-    train_loader = train_ds.create_loader(batch_size=rank_batch_size, workers=args.workers, ddp=args.ddp)
-    val_loader = val_ds.create_loader(batch_size=rank_batch_size, workers=args.workers, ddp=args.ddp)
+    train_loader = train_ds.create_loader(
+        batch_size=rank_batch_size, workers=args.workers, ddp=args.ddp, collate_fn=collate_fn
+    )
+    val_loader = val_ds.create_loader(
+        batch_size=rank_batch_size, workers=args.workers, ddp=args.ddp, collate_fn=collate_fn
+    )
 
-    run_checkpoint_dir = args.ckpt_dir / args.arch / utils.current_dt()
+    current_dt = utils.current_dt()
+    run_checkpoint_dir = args.ckpt_dir / args.arch / current_dt
     if args.is_master_process:
         run_checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
+    tracker = track.Tracker(
+        project="crepa",
+        name=f"imagenet-clean-finetune-{current_dt}",
+        config={"arch": args.arch, "batch_size": args.batch_size, "epochs": args.epochs, "lr": args.lr},
+        enabled=args.tracker,
+    )
     ctx = IJepaFinetuneCtx(
         device=device,
         use_mixed_precision=args.use_mixed_precision,
@@ -215,6 +221,7 @@ def finetune(args: settings.Finetune) -> None:
         arch=args.arch,
         _raw_model=_model,
         _ddp_model=ddp_model,
+        tracker=tracker,
         # finetune-specific
         train_loader=train_loader,
         epochs=args.epochs,

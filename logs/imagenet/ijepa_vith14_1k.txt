@@ -1,0 +1,14 @@
+(crepa) (base) tvnguyen@gpu-4-12:~/crepa$ crepa eval -a ijepa_vith14_1k -b 512 -c ckpt/ijepa_vith14_1k/2026-04-18_11\:37\:15/best.pth 
+[04/20/26 17:09:34] INFO     loaded classifier head from checkpoint ckpt/ijepa_vith14_1k/2026-04-18_11:37:15/best.pth for architecture ijepa_vith14_1k                                      evaluate.py:43
+* Created new run: imagenet-clean-eval-2026-04-20 17:09:36
+test: [ 1/98]   time 25.025 (25.025)    acc@1  83.79 ( 83.79)   acc@5  95.12 ( 95.12)   err@1  16.21 ( 16.21)
+test: [11/98]   time  0.963 ( 3.254)    acc@1  82.23 ( 79.92)   acc@5  91.60 ( 93.57)   err@1  17.77 ( 20.08)
+test: [21/98]   time  0.967 ( 2.164)    acc@1  77.34 ( 78.83)   acc@5  92.58 ( 93.20)   err@1  22.66 ( 21.17)
+test: [31/98]   time  0.969 ( 1.778)    acc@1  79.30 ( 78.47)   acc@5  92.77 ( 93.55)   err@1  20.70 ( 21.53)
+test: [41/98]   time  0.969 ( 1.581)    acc@1  59.77 ( 78.72)   acc@5  83.01 ( 93.46)   err@1  40.23 ( 21.28)
+test: [51/98]   time  0.969 ( 1.461)    acc@1  68.75 ( 76.35)   acc@5  87.89 ( 91.94)   err@1  31.25 ( 23.65)
+test: [61/98]   time  0.969 ( 1.381)    acc@1  58.20 ( 75.56)   acc@5  81.05 ( 91.10)   err@1  41.80 ( 24.44)
+test: [71/98]   time  0.969 ( 1.323)    acc@1  72.27 ( 74.41)   acc@5  87.30 ( 90.40)   err@1  27.73 ( 25.59)
+test: [81/98]   time  0.970 ( 1.279)    acc@1  66.60 ( 73.36)   acc@5  84.77 ( 89.57)   err@1  33.40 ( 26.64)
+test: [91/98]   time  0.969 ( 1.245)    acc@1  66.80 ( 72.48)   acc@5  88.28 ( 89.20)   err@1  33.20 ( 27.52)
+ *  acc@1 72.580 acc@5 89.222 err@1 27.420

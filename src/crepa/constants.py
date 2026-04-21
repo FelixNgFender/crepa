@@ -12,11 +12,12 @@ DDP_WORLD_SIZE = 1
 # data
 DATA_DIR = pathlib.Path("data")
 CKPT_DIR = pathlib.Path("ckpt")
-WORKERS = DDP_WORLD_SIZE * 16
+WORKERS = 16
 BATCH_SIZE = 256
 
 # log
 LOG_FREQ = 10
+TRACKER = False
 
 # hyperparameters
 EPOCHS = 5
@@ -26,6 +27,8 @@ LR = 3e-4
 EPOCH_CKPT_TMPL = "epoch_{epoch}.pth"
 BEST_CKPT = "best.pth"
 FINAL_CKPT = "final.pth"
+
+EVAL_CORRUPTED = False
 
 # misc
 DATEFMT_STR_HUMAN = "%Y-%m-%d %H:%M:%S"

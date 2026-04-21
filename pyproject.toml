@@ -25,7 +25,6 @@ dev = ["prek>=0.3.9", "ruff>=0.15.10", "ty>=0.0.29"]
 [project.scripts]
 crepa = "crepa:main"
 
-
 [tool.ruff]
 line-length = 120
 lint.select = [
@@ -47,5 +46,5 @@ lint.ignore = [
 # https://github.com/astral-sh/ruff-vscode/blob/main/README.md#configuring-vs-code
 lint.extend-select = ["I"]
 
-[tool.ty.rules]
-possibly-missing-attribute = "ignore" # https://github.com/astral-sh/ty/issues/2244
+[tool.ty]
+rules.possibly-missing-attribute = "ignore" # https://github.com/astral-sh/ty/issues/2244

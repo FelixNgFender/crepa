@@ -80,6 +80,12 @@ class HuggingFace(Base):
         ),
     ] = None
 
+    @pydantic.model_validator(mode="after")
+    def override_hf_env(self) -> "HuggingFace":
+        if self.hf_token is not None:
+            os.environ["HF_TOKEN"] = self.hf_token
+        return self
+
 
 class Log(Base):
     log_freq: Annotated[
@@ -89,13 +95,20 @@ class Log(Base):
             description="Frequency of logging",
         ),
     ] = constants.LOG_FREQ
+    tracker: Annotated[
+        ps.CliImplicitFlag[bool],
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("t", "tracker"),
+            description="Whether to log training and evaluation metrics to trackio.",
+        ),
+    ] = constants.TRACKER
 
 
 class DataLoading(Base):
     data_dir: Annotated[
         pathlib.Path,
         pydantic.Field(
-            validation_alias=pydantic.AliasChoices("d", "data_dir"),
+            validation_alias=pydantic.AliasChoices("d", "data", "data_dir"),
             description="Dataset directory",
         ),
     ] = constants.DATA_DIR
@@ -107,13 +120,44 @@ class DataLoading(Base):
         Directory for ImageNet-1k clean dataset.
 
         Expected structure:
-            imagenet/
-            └── val
-                └── ILSVRC2012_img_val.tar
-
-            2 directories, 1 file
+             imagenet/train/
+             ├── n01440764
+             │   ├── n01440764_10026.JPEG
+             │   ├── n01440764_10027.JPEG
+             │   ├── ......
+             ├── ......
+             imagenet/val/
+             ├── n01440764
+             │   ├── ILSVRC2012_val_00000293.JPEG
+             │   ├── ILSVRC2012_val_00002138.JPEG
+             │   ├── ......
+             ├── ......
         """
         return self.data_dir / "imagenet"
+
+    @pydantic.computed_field
+    @functools.cached_property[pathlib.Path]
+    def imagenet_c_dir(self) -> pathlib.Path:
+        """
+        Directory for ImageNet-C (intentionally) corrupted dataset.
+
+        Expected structure:
+            imagenet-c
+            ├── brightness
+            │   ├── 1
+            │   │   ├── n01440764
+            │   │   │   ├── ILSVRC2012_val_00000293.JPEG
+            │   │   │   ├── ILSVRC2012_val_00002138.JPEG
+            │   │   │   ├── ILSVRC2012_val_00003014.JPEG
+            │   │   │   ├── ILSVRC2012_val_00006697.JPEG
+            │   │   │   ├── ILSVRC2012_val_00007197.JPEG
+            │   │   │   ├── ILSVRC2012_val_00009111.JPEG
+            │   │   │   ├── ......
+            │   │   ├── ......
+            │   ├── ......
+            ├── ......
+        """
+        return self.data_dir / "imagenet-c"
 
     workers: Annotated[
         pydantic.NonNegativeInt,
@@ -151,7 +195,7 @@ class Checkpoint(Base):
     ckpt_dir: Annotated[
         pathlib.Path,
         pydantic.Field(
-            validation_alias=pydantic.AliasChoices("c", "ckpt_dir"),
+            validation_alias=pydantic.AliasChoices("c", "ckpt", "ckpt_dir"),
             description="Checkpoint directory",
         ),
     ] = constants.CKPT_DIR
@@ -196,6 +240,14 @@ class Eval(DataLoading, Log, DDP, Precision, Device, Seed, HuggingFace):
             raise ValueError(msg)
         return self
 
+    corrupted: Annotated[
+        ps.CliImplicitFlag[bool],
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("cr", "corrupted"),
+            description="Whether to evaluate on the corrupted ImageNet-C. If false, evaluate on clean ImageNet-1k.",
+        ),
+    ] = constants.EVAL_CORRUPTED
+
     arch: Annotated[
         Literal[
             "alexnet",
@@ -204,7 +256,7 @@ class Eval(DataLoading, Log, DDP, Precision, Device, Seed, HuggingFace):
             # 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'densenet264',
             "resnet18",
             "resnet50",
-            # "resnet34", "resnet101", "resnet152",
+            #  "resnet34", "resnet101", "resnet152",
             # 'resnext50', 'resnext101', 'resnext101_64'
             "ijepa_vith14_1k",
             "ijepa_vith16_1k",
@@ -214,5 +266,35 @@ class Eval(DataLoading, Log, DDP, Precision, Device, Seed, HuggingFace):
         pydantic.Field(
             validation_alias=pydantic.AliasChoices("a", "arch"),
             description="Model architecture to evaluate",
+        ),
+    ]
+    ckpt: Annotated[
+        pathlib.Path | None,
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("c", "ckpt"),
+            description="Weights-only checkpoint to evaluate on. If none, use pretrained weights if available, "
+            "raise RuntimeError otherwise.",
+        ),
+    ] = None
+
+
+class Parse(Base):
+    """Settings for the `parse` CLI subcommand."""
+
+    mode: Annotated[
+        Literal["table", "sheet", "formulas", "long"],
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("m", "mode"),
+            description=(
+                "Output format: table: readable; sheet: 2 TSV lines (categories row + formulas row); "
+                "formulas: formulas-only TSV row; long: distortion+formula TSV rows"
+            ),
+        ),
+    ] = "sheet"
+    input: Annotated[
+        pathlib.Path,
+        pydantic.Field(
+            validation_alias=pydantic.AliasChoices("i", "input"),
+            description="Path to one ImageNet-C log file",
         ),
     ]
