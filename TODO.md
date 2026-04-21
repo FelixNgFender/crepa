@@ -54,5 +54,4 @@ models: SAM 3, SigLIP 2, DINOv3
 
 - finetune, eval lejepa
   <https://github.com/galilai-group/lejepa/blob/main/MINIMAL.md>
-- cancel vastai
 - finetune i-jepa/lejepa until SOTA
