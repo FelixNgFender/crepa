@@ -262,6 +262,10 @@ class Eval(DataLoading, Log, DDP, Precision, Device, Seed, HuggingFace):
             "ijepa_vith16_1k",
             "ijepa_vith14_22k",
             "ijepa_vitg16_22k",
+            "dinov2-with-registers-small-imagenet1k-1-layer",
+            "dinov2-with-registers-base-imagenet1k-1-layer",
+            "dinov2-with-registers-large-imagenet1k-1-layer",
+            "dinov2-with-registers-giant-imagenet1k-1-layer",
         ],
         pydantic.Field(
             validation_alias=pydantic.AliasChoices("a", "arch"),
