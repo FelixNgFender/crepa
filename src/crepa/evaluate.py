@@ -51,7 +51,6 @@ def evaluate(args: settings.Eval) -> None:
             else:
                 logger.warning("no checkpoint provided, using randomly initialized classifier head of %s", args.arch)
             collate_fn = _model.collate_fn
-
         case (
             "dinov2-with-registers-small-imagenet1k-1-layer"
             | "dinov2-with-registers-base-imagenet1k-1-layer"
@@ -59,6 +58,9 @@ def evaluate(args: settings.Eval) -> None:
             | "dinov2-with-registers-giant-imagenet1k-1-layer"
         ):
             _model = model.HFImageClassifier.from_pretrained(f"facebook/{args.arch}")
+            collate_fn = _model.collate_fn
+        case "eva_giant_patch14_224.clip_ft_in1k" | "eva02_large_patch14_448.mim_m38m_ft_in22k_in1k":
+            _model = model.HFImageClassifier.from_pretrained(f"timm/{args.arch}")
             collate_fn = _model.collate_fn
         case _:
             msg = f"unsupported architecture {args.arch}"

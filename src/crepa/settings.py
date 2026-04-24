@@ -266,6 +266,8 @@ class Eval(DataLoading, Log, DDP, Precision, Device, Seed, HuggingFace):
             "dinov2-with-registers-base-imagenet1k-1-layer",
             "dinov2-with-registers-large-imagenet1k-1-layer",
             "dinov2-with-registers-giant-imagenet1k-1-layer",
+            "eva_giant_patch14_224.clip_ft_in1k",
+            "eva02_large_patch14_448.mim_m38m_ft_in22k_in1k",
         ],
         pydantic.Field(
             validation_alias=pydantic.AliasChoices("a", "arch"),
