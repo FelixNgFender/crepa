@@ -275,6 +275,9 @@ class Eval(DataLoading, Log, DDP, Precision, Device, Seed, HuggingFace):
             "vit_base_patch16_224.dino",  # pretrain imagenet-1k, needs community head
             "eva02_base_patch14_448.mim_in22k_ft_in22k_in1k",  # pretrain in22k, ft in22k in1k
             "convnextv2_base.fcmae_ft_in22k_in1k",  # pretrain in1k, ft in22k in1k
+            "convnext_base.clip_laion2b_augreg_ft_in12k_in1k_384",  # pretrain laion-2b, ft in12k in1k
+            "beitv2_base_patch16_224.in1k_ft_in22k_in1k",
+            "deit3_base_patch16_384.fb_in22k_ft_in1k",
         ],
         pydantic.Field(
             validation_alias=pydantic.AliasChoices("a", "arch"),

@@ -70,6 +70,9 @@ def evaluate(args: settings.Eval) -> None:
             | "vit_base_patch16_clip_224.openai_ft_in1k"
             | "eva02_base_patch14_448.mim_in22k_ft_in22k_in1k"
             | "convnextv2_base.fcmae_ft_in22k_in1k"
+            | "convnext_base.clip_laion2b_augreg_ft_in12k_in1k_384"
+            | "beitv2_base_patch16_224.in1k_ft_in22k_in1k"
+            | "deit3_base_patch16_384.fb_in22k_ft_in1k"
         ):
             _model = model.HFImageClassifier.from_pretrained(f"timm/{args.arch}")
             collate_fn = _model.collate_fn
