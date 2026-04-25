@@ -268,6 +268,13 @@ class Eval(DataLoading, Log, DDP, Precision, Device, Seed, HuggingFace):
             "dinov2-with-registers-giant-imagenet1k-1-layer",
             "eva_giant_patch14_224.clip_ft_in1k",
             "eva02_large_patch14_448.mim_m38m_ft_in22k_in1k",
+            # backbones test
+            "vit_base_patch16_224.augreg2_in21k_ft_in1k",  # pretrain in21k, finetune in1k
+            "vit_base_patch16_clip_224.openai_ft_in1k",  # pretrain WIT-400M, finetune in1k
+            "vit_base_patch16_224.mae",  # pretrain imagenet-1k, needs community head
+            "vit_base_patch16_224.dino",  # pretrain imagenet-1k, needs community head
+            "eva02_base_patch14_448.mim_in22k_ft_in22k_in1k",  # pretrain in22k, ft in22k in1k
+            "convnextv2_base.fcmae_ft_in22k_in1k",  # pretrain in1k, ft in22k in1k
         ],
         pydantic.Field(
             validation_alias=pydantic.AliasChoices("a", "arch"),

@@ -1,4 +1,5 @@
 import logging
+from typing import assert_never
 
 import torch
 from torchvision import models
@@ -21,6 +22,7 @@ def evaluate(args: settings.Eval) -> None:
 
     transform = None
     collate_fn = None
+    forward_meta = {}
     match args.arch:
         case "alexnet":
             if args.ckpt is None:
@@ -44,13 +46,15 @@ def evaluate(args: settings.Eval) -> None:
                 _model.load_state_dict(torch.load(args.ckpt, map_location=device, weights_only=True))
             transform = models.ResNet50_Weights.DEFAULT.transforms()
         case "ijepa_vith14_1k" | "ijepa_vith16_1k" | "ijepa_vith14_22k" | "ijepa_vitg16_22k":
-            _model = model.IJepaImageClassifier.from_pretrained(f"facebook/{args.arch}", num_labels=1000)
+            _model = model.HFImageClassifier.from_pretrained(f"facebook/{args.arch}", model_meta={"num_labels": 1000})
             if args.ckpt is not None:
-                _model.load_classifier_head(torch.load(args.ckpt, map_location=device, weights_only=True))
+                sd = torch.load(args.ckpt, map_location=device, weights_only=True)
+                _model.net.classifier.load_state_dict(sd)  # ty:ignore[unresolved-attribute]
                 logger.info("loaded classifier head from checkpoint %s for architecture %s", args.ckpt, args.arch)
             else:
                 logger.warning("no checkpoint provided, using randomly initialized classifier head of %s", args.arch)
             collate_fn = _model.collate_fn
+            forward_meta = {"interpolate_pos_encoding": True}
         case (
             "dinov2-with-registers-small-imagenet1k-1-layer"
             | "dinov2-with-registers-base-imagenet1k-1-layer"
@@ -59,12 +63,39 @@ def evaluate(args: settings.Eval) -> None:
         ):
             _model = model.HFImageClassifier.from_pretrained(f"facebook/{args.arch}")
             collate_fn = _model.collate_fn
-        case "eva_giant_patch14_224.clip_ft_in1k" | "eva02_large_patch14_448.mim_m38m_ft_in22k_in1k":
+        case (
+            "eva_giant_patch14_224.clip_ft_in1k"
+            | "eva02_large_patch14_448.mim_m38m_ft_in22k_in1k"
+            | "vit_base_patch16_224.augreg2_in21k_ft_in1k"
+            | "vit_base_patch16_clip_224.openai_ft_in1k"
+            | "eva02_base_patch14_448.mim_in22k_ft_in22k_in1k"
+            | "convnextv2_base.fcmae_ft_in22k_in1k"
+        ):
             _model = model.HFImageClassifier.from_pretrained(f"timm/{args.arch}")
             collate_fn = _model.collate_fn
+        case "vit_base_patch16_224.mae":
+            # NOTE: for MAE and DINO, use community pretrained heads since they didn't pretrain a head on ImageNet-1k.
+            _model = model.HFImageClassifier.from_pretrained(f"timm/{args.arch}", model_meta={"num_labels": 1000})
+            full_sd = torch.hub.load_state_dict_from_url(
+                "https://huggingface.co/paulgavrikov/in1k_head_for_vit_base_patch16_224.mae/resolve/main/checkpoint.pth.tar",
+                map_location=device,
+                weights_only=True,
+            )["state_dict"]
+            sd = {k.replace("module.linear.", ""): v for k, v in full_sd.items()}
+            _model.net.timm_model.head.load_state_dict(sd)  # ty:ignore[unresolved-attribute]
+            collate_fn = _model.collate_fn
+        case "vit_base_patch16_224.dino":
+            _model = model.HFImageClassifier.from_pretrained(f"timm/{args.arch}", model_meta={"num_labels": 1000})
+            full_sd = torch.hub.load_state_dict_from_url(
+                "https://huggingface.co/paulgavrikov/in1k_head_for_vit_base_patch16_224.dino/resolve/main/checkpoint.pth.tar",
+                map_location=device,
+                weights_only=True,
+            )["state_dict"]
+            sd = {k.replace("module.linear.", ""): v for k, v in full_sd.items()}
+            _model.net.timm_model.head.load_state_dict(sd)  # ty:ignore[unresolved-attribute]
+            collate_fn = _model.collate_fn
         case _:
-            msg = f"unsupported architecture {args.arch}"
-            raise RuntimeError(msg)
+            assert_never(args.arch)
 
     # switch from the default NCHW layout to channels-last NHWC memory format, improving data locality and unlocking
     # optimized convolution kernels
@@ -105,6 +136,7 @@ def evaluate(args: settings.Eval) -> None:
             loader=loader,
             model=_model,
             ddp_model=ddp_model,
+            forward_meta=forward_meta,
         )
         return
 
@@ -140,6 +172,7 @@ def evaluate(args: settings.Eval) -> None:
                 tracker=tracker,
                 model=_model,
                 ddp_model=ddp_model,
+                forward_meta=forward_meta,
             )
             err1 = 100.0 - acc1
             errs.append(err1)
@@ -155,8 +188,9 @@ def _eval_with_loader(
     args: settings.Eval,
     tracker: track.Tracker,
     loader: torch.utils.data.DataLoader,
-    model: torch.nn.Module,
+    model: model.HFImageClassifier,
     ddp_model: torch.nn.parallel.DistributedDataParallel | None,
+    forward_meta: dict | None,
 ) -> float:
     """Evaluate on the validation set. Returns the top-1 accuracy."""
     ctx = context.Eval(
@@ -171,6 +205,7 @@ def _eval_with_loader(
         log_freq=args.log_freq,
         tracker=tracker,
         arch=args.arch,
+        forward_meta=forward_meta,
         _raw_model=model,
         _ddp_model=ddp_model,
     )

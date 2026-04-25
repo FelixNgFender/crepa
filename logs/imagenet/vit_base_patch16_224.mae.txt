@@ -1,0 +1,35 @@
+starting batch job on gpu-5-01.int.turing.wpi.edu at Fri 24 Apr 2026 05:24:03 PM EDT
+Fri Apr 24 17:24:03 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.133.20             Driver Version: 570.133.20     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 PCIe               On  |   00000000:CA:00.0 Off |                    0 |
+| N/A   37C    P0             45W /  310W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+starting evals for vit_base_patch16_224.mae at Fri 24 Apr 2026 05:24:04 PM EDT
+Downloading: "https://huggingface.co/paulgavrikov/in1k_head_for_vit_base_patch16_224.mae/resolve/main/checkpoint.pth.tar" to /home/tvnguyen/.cache/torch/hub/checkpoints/checkpoint.pth.tar
+test: [  1/196]	time  8.770 ( 8.770)	acc@1  67.97 ( 67.97)	acc@5  88.67 ( 88.67)	err@1  32.03 ( 32.03)
+test: [ 21/196]	time  0.054 ( 0.469)	acc@1  64.45 ( 63.78)	acc@5  78.52 ( 83.35)	err@1  35.55 ( 36.22)
+test: [ 41/196]	time  0.054 ( 0.322)	acc@1  44.53 ( 59.24)	acc@5  75.00 ( 81.68)	err@1  55.47 ( 40.76)
+test: [ 61/196]	time  0.054 ( 0.286)	acc@1  50.00 ( 59.29)	acc@5  78.12 ( 82.65)	err@1  50.00 ( 40.71)
+test: [ 81/196]	time  0.055 ( 0.270)	acc@1  39.84 ( 60.17)	acc@5  69.53 ( 83.23)	err@1  60.16 ( 39.83)
+test: [101/196]	time  0.051 ( 0.282)	acc@1  32.03 ( 57.02)	acc@5  58.59 ( 80.26)	err@1  67.97 ( 42.98)
+test: [121/196]	time  0.054 ( 0.278)	acc@1  42.19 ( 56.08)	acc@5  68.36 ( 78.79)	err@1  57.81 ( 43.92)
+test: [141/196]	time  0.054 ( 0.270)	acc@1  63.28 ( 54.36)	acc@5  80.86 ( 77.27)	err@1  36.72 ( 45.64)
+test: [161/196]	time  0.054 ( 0.261)	acc@1  58.20 ( 53.05)	acc@5  75.39 ( 75.96)	err@1  41.80 ( 46.95)
+test: [181/196]	time  0.051 ( 0.266)	acc@1  43.75 ( 51.92)	acc@5  75.39 ( 75.12)	err@1  56.25 ( 48.08)
+ *  acc@1 51.958 acc@5 75.180 err@1 48.042
+done with clean eval at Fri 24 Apr 2026 05:25:25 PM EDT

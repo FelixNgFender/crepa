@@ -5,10 +5,9 @@ import pathlib
 import time
 
 import torch
-from torch import nn
 from torch.utils import data
 
-from crepa import constants, context, dataset, metric, model, settings, track, utils
+from crepa import constants, context, dataset, metrics, model, settings, track, utils
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +29,6 @@ class IJepaFinetuneCtx(context.Eval):
     # checkpointing
     ckpt_dir: pathlib.Path
 
-    # model-specific
-    classifier: nn.Linear | nn.Identity
-
     def train(
         self,
     ) -> None:
@@ -41,12 +37,12 @@ class IJepaFinetuneCtx(context.Eval):
         def train_one_epoch(
             epoch: int,
         ) -> None:
-            batch_time = metric.AverageMeter("time", self.device, ":6.3f", metric.Summary.NONE)
-            data_time = metric.AverageMeter("data", self.device, ":6.3f", metric.Summary.NONE)
-            losses = metric.AverageMeter("loss", self.device, ":.4e", metric.Summary.NONE)
-            top1 = metric.AverageMeter("acc@1", self.device, ":6.2f", metric.Summary.NONE)
-            top5 = metric.AverageMeter("acc@5", self.device, ":6.2f", metric.Summary.NONE)
-            progress = metric.ProgressMeter(
+            batch_time = metrics.AverageMeter("time", self.device, ":6.3f", metrics.Summary.NONE)
+            data_time = metrics.AverageMeter("data", self.device, ":6.3f", metrics.Summary.NONE)
+            losses = metrics.AverageMeter("loss", self.device, ":.4e", metrics.Summary.NONE)
+            top1 = metrics.AverageMeter("acc@1", self.device, ":6.2f", metrics.Summary.NONE)
+            top5 = metrics.AverageMeter("acc@5", self.device, ":6.2f", metrics.Summary.NONE)
+            progress = metrics.ProgressMeter(
                 len(self.train_loader),
                 [batch_time, data_time, losses, top1, top5],
                 prefix=f"epoch: [{epoch}]",
@@ -66,12 +62,12 @@ class IJepaFinetuneCtx(context.Eval):
 
                 # compute output
                 outputs = self.model(
-                    pixel_values=images_d, labels=target_d, return_logits=False, interpolate_pos_encoding=True
+                    pixel_values=images_d, labels=target_d, return_logits=False, meta={"interpolate_pos_encoding": True}
                 )
                 loss = outputs.loss
 
                 # measure accuracy and record loss
-                acc1, acc5 = metric.accuracy(outputs.logits, target_d, topk=(1, 5))
+                acc1, acc5 = metrics.accuracy(outputs.logits, target_d, topk=(1, 5))
                 losses.update(loss.item(), images.size(0))
                 top1.update(acc1, images.size(0))
                 top5.update(acc5, images.size(0))
@@ -154,7 +150,7 @@ class IJepaFinetuneCtx(context.Eval):
             return
 
         ckpt = self.ckpt_dir / filename
-        torch.save(self.classifier.state_dict(), ckpt)
+        torch.save(self.model.net.classifier, ckpt)  # ty:ignore[unresolved-attribute]
         logger.info("checkpoint saved: %s", ckpt)
 
 
@@ -169,12 +165,14 @@ def finetune(args: settings.Finetune) -> None:
         world_size=args.world_size,
     )
 
-    _model = model.IJepaImageClassifier.from_pretrained(f"facebook/{args.arch}", num_labels=1000)
-    _model.freeze_backbone()
+    _model = model.HFImageClassifier.from_pretrained(f"facebook/{args.arch}", model_meta={"num_labels": 1000})
+    # freeze backbone
+    _model.net.requires_grad_(requires_grad=False)  # ty:ignore[unresolved-attribute]
+    _model.net.classifier.requires_grad_(requires_grad=True)  # ty:ignore[unresolved-attribute]
     collate_fn = _model.collate_fn
 
     _model.to(device, memory_format=torch.channels_last)  # ty:ignore[no-matching-overload]
-    optimizer = torch.optim.AdamW(_model.net.classifier.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(_model.net.classifier.parameters(), lr=args.lr)  # ty:ignore[unresolved-attribute]
 
     if not args.ddp:
         ddp_model = None
@@ -228,6 +226,6 @@ def finetune(args: settings.Finetune) -> None:
         lr=args.lr,
         optimizer=optimizer,
         ckpt_dir=run_checkpoint_dir,
-        classifier=_model.net.classifier,
+        forward_meta={"interpolate_pos_encoding": True},
     )
     ctx.train()

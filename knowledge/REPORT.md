@@ -58,3 +58,7 @@ When using the DET or CLS-LOC dataset, please cite both of the following:
 code lifted from
 <https://github.com/pytorch/examples/blob/main/imagenet/main.py>, make sure to
 credit
+
+## Future work
+
+LAION-C
